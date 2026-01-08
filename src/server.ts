@@ -15,6 +15,8 @@ import { ERRORS } from './constants/errors';
 
 import authRoutes from './routes/auth';
 import githubRoutes from './routes/github';
+import webhookRoutes from './routes/webhooks';
+import projectRoutes from './routes/projects';
 import projectsRoutes from './routes/projects';
 import healthRoutes from './routes/health';
 
@@ -62,6 +64,32 @@ app.get('/api/protected', authenticateToken, (req: Request, res: Response) => {
 app.use('/auth', authLimiter, authRoutes);
 app.use('/github', githubLimiter, authenticateToken, githubRoutes);
 app.use('/projects', generalLimiter, authenticateToken, projectsRoutes);
+// Protected route example (for testing auth middleware)
+app.get(
+  '/api/protected',
+  authenticateToken,
+  (req: Request, res: Response) => {
+    res.status(200).json({
+      status: 'success',
+      message: 'You have access to this protected route',
+      user: req.authUser,
+    });
+  }
+);
+
+// Mount auth routes
+app.use('/auth', authRoutes);
+
+// Mount GitHub routes (all require JWT authentication)
+app.use('/github', authenticateToken, githubRoutes);
+
+// Mount project routes (all require JWT authentication)
+app.use('/projects', authenticateToken, projectRoutes);
+
+// Mount webhook routes (PUBLIC - signature verified in route)
+app.use('/webhook', webhookRoutes);
+// Mount Projects routes (all require JWT authentication)
+app.use('/projects', authenticateToken, projectsRoutes);
 
 app.use((req: Request, res: Response) => {
   res.status(ERRORS.NOT_FOUND.status).json({

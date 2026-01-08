@@ -74,6 +74,14 @@ export interface GitHubPushEvent {
   pusher: {
     name: string;
     email: string;
+export interface GitHubPushEvent {
+  ref: string; // 'refs/heads/main'
+  repository: {
+    name: string;
+    full_name: string; // 'owner/repo'
+  };
+  pusher: {
+    name: string;
   };
   commits: Array<{
     id: string;
@@ -94,4 +102,10 @@ export interface ErrorResponse {
   code: string;
   message: string;
   details?: any;
+  }>;
+}
+
+export interface WebhookSignature {
+  header: string; // 'X-Hub-Signature-256'
+  signature: string; // 'sha256=...'
 }
