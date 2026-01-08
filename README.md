@@ -332,6 +332,39 @@ The project includes:
 - ESLint-ready structure
 - Proper error handling and logging
 
+## GitHub Webhooks
+
+The system supports automatic redeployment via GitHub webhooks on push events.
+
+### Webhook Setup
+
+To enable automatic redeployment for a project:
+
+1.  **Get Webhook Details**: Call `GET /projects/:projectId/webhook-secret` to retrieve your project's unique `webhookSecret` and the `webhookUrl`.
+2.  **Configure GitHub**:
+    *   Go to your repository settings on GitHub.
+    *   Select **Webhooks** > **Add webhook**.
+    *   **Payload URL**: Enter the `webhookUrl` (e.g., `https://your-api.com/webhook/github`).
+    *   **Content type**: Select `application/json`.
+    *   **Secret**: Enter the `webhookSecret`.
+    *   **Which events would you like to trigger this webhook?**: Select **Just the push event**.
+    *   Click **Add webhook**.
+
+### Testing Webhooks
+
+You can simulate a push event by calling:
+`POST /projects/:projectId/webhook/test`
+
+Example using `curl`:
+```bash
+curl -X POST http://localhost:3000/projects/<projectId>/webhook/test \
+  -H "Authorization: Bearer <your-jwt-token>"
+```
+
+### Signature Verification
+
+The system verifies all incoming webhooks using HMAC-SHA256 signature verification to ensure they originate from GitHub.
+
 ## License
 
 MIT
