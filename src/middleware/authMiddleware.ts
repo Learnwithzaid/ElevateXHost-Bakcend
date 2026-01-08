@@ -4,7 +4,7 @@ import jwt from 'jsonwebtoken';
 declare global {
   namespace Express {
     interface Request {
-      user?: {
+      authUser?: {
         id: string;
         email: string;
         username: string;
@@ -47,7 +47,7 @@ export function authenticateToken(
       username: string;
     };
 
-    req.user = {
+    req.authUser = {
       id: decoded.id,
       email: decoded.email,
       username: decoded.username,

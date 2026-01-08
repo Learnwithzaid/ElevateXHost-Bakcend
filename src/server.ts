@@ -38,7 +38,7 @@ app.get(
     res.status(200).json({
       status: 'success',
       message: 'You have access to this protected route',
-      user: req.user,
+      user: req.authUser,
     });
   }
 );

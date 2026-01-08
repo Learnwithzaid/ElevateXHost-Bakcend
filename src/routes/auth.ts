@@ -22,7 +22,7 @@ function generateToken(user: { id: string; email: string; username: string }): s
       username: user.username,
     },
     JWT_SECRET,
-    { expiresIn: JWT_EXPIRY }
+    { expiresIn: JWT_EXPIRY } as jwt.SignOptions
   );
 }
 
@@ -98,7 +98,7 @@ router.post('/signup', async (req: Request, res: Response): Promise<void> => {
 
     // Generate JWT token
     const token = generateToken({
-      id: (newUser._id as string).toString(),
+      id: newUser._id.toString(),
       email: newUser.email,
       username: newUser.username,
     });
@@ -109,7 +109,7 @@ router.post('/signup', async (req: Request, res: Response): Promise<void> => {
       data: {
         token,
         user: {
-          id: (newUser._id as string).toString(),
+          id: newUser._id.toString(),
           email: newUser.email,
           username: newUser.username,
         },
@@ -173,7 +173,7 @@ router.post('/login', async (req: Request, res: Response): Promise<void> => {
 
     // Generate JWT token
     const token = generateToken({
-      id: (user._id as string).toString(),
+      id: user._id.toString(),
       email: user.email,
       username: user.username,
     });
@@ -184,7 +184,7 @@ router.post('/login', async (req: Request, res: Response): Promise<void> => {
       data: {
         token,
         user: {
-          id: (user._id as string).toString(),
+          id: user._id.toString(),
           email: user.email,
           username: user.username,
         },
@@ -224,7 +224,7 @@ router.get(
 
       // Generate JWT token for the authenticated user
       const token = generateToken({
-        id: (user._id as string).toString(),
+        id: user._id.toString(),
         email: user.email,
         username: user.username,
       });
@@ -255,7 +255,7 @@ router.use((err: AuthError, req: Request, res: Response, next: NextFunction): vo
     return;
   }
 
-  if (err.code === 11000) {
+  if (err.name === 'MongoError' && (err as any).code === 11000) {
     sendErrorResponse(
       res,
       409,
