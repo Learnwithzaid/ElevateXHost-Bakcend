@@ -5,6 +5,7 @@ import passport from 'passport';
 import { initializePassport } from './config/passportConfig';
 import authRoutes from './routes/auth';
 import githubRoutes from './routes/github';
+import projectsRoutes from './routes/projects';
 import { authenticateToken } from './middleware/authMiddleware';
 
 // Load environment variables
@@ -49,6 +50,9 @@ app.use('/auth', authRoutes);
 
 // Mount GitHub routes (all require JWT authentication)
 app.use('/github', authenticateToken, githubRoutes);
+
+// Mount Projects routes (all require JWT authentication)
+app.use('/projects', authenticateToken, projectsRoutes);
 
 // 404 handler
 app.use((req: Request, res: Response) => {
