@@ -57,6 +57,23 @@ export interface Release {
   publishedAt: Date;
 }
 
+/**
+ * GitHub Push Event interface
+ */
+export interface GitHubPushEvent {
+  ref: string;
+  repository: {
+    id: number;
+    name: string;
+    full_name: string;
+    owner: {
+      name: string;
+      email: string;
+    };
+  };
+  pusher: {
+    name: string;
+    email: string;
 export interface GitHubPushEvent {
   ref: string; // 'refs/heads/main'
   repository: {
@@ -69,6 +86,22 @@ export interface GitHubPushEvent {
   commits: Array<{
     id: string;
     message: string;
+    timestamp: string;
+    author: {
+      name: string;
+      email: string;
+    };
+  }>;
+}
+
+/**
+ * Error Response interface
+ */
+export interface ErrorResponse {
+  status: 'error';
+  code: string;
+  message: string;
+  details?: any;
   }>;
 }
 

@@ -1,39 +1,69 @@
 import express, { Application, Request, Response, NextFunction } from 'express';
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
+import helmet from 'helmet';
 import passport from 'passport';
 import { initializePassport } from './config/passportConfig';
+import { corsMiddleware } from './middleware/corsMiddleware';
+import { requestLogger } from './middleware/requestLogger';
+import { validateContentType } from './middleware/validateContentType';
+import { errorHandler } from './middleware/errorHandler';
+import { generalLimiter, authLimiter, githubLimiter } from './middleware/rateLimiter';
+import { authenticateToken } from './middleware/authMiddleware';
+import { info, error as logError } from './utils/logger';
+import { ERRORS } from './constants/errors';
+
 import authRoutes from './routes/auth';
 import githubRoutes from './routes/github';
 import webhookRoutes from './routes/webhooks';
 import projectRoutes from './routes/projects';
 import projectsRoutes from './routes/projects';
-import { authenticateToken } from './middleware/authMiddleware';
+import healthRoutes from './routes/health';
 
-// Load environment variables
 dotenv.config();
 
 const app: Application = express();
 const PORT = process.env.PORT || 3000;
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/auth-system';
 
-// Middleware
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      scriptSrc: ["'self'"],
+      imgSrc: ["'self'", 'data:', 'https:'],
+    },
+  },
+  frameguard: { action: 'deny' },
+  noSniff: true,
+  xssFilter: true,
+}));
 
-// Initialize Passport
+app.use(corsMiddleware);
+
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
 initializePassport();
 app.use(passport.initialize());
 
-// Health check endpoint
-app.get('/health', (req: Request, res: Response) => {
+app.use(requestLogger);
+app.use(validateContentType);
+
+app.use('/health', healthRoutes);
+
+app.get('/api/protected', authenticateToken, (req: Request, res: Response) => {
   res.status(200).json({
     status: 'success',
-    message: 'Server is running',
-    timestamp: new Date().toISOString(),
+    message: 'You have access to this protected route',
+    user: req.authUser,
   });
 });
 
+app.use('/auth', authLimiter, authRoutes);
+app.use('/github', githubLimiter, authenticateToken, githubRoutes);
+app.use('/projects', generalLimiter, authenticateToken, projectsRoutes);
 // Protected route example (for testing auth middleware)
 app.get(
   '/api/protected',
@@ -61,63 +91,59 @@ app.use('/webhook', webhookRoutes);
 // Mount Projects routes (all require JWT authentication)
 app.use('/projects', authenticateToken, projectsRoutes);
 
-// 404 handler
 app.use((req: Request, res: Response) => {
-  res.status(404).json({
+  res.status(ERRORS.NOT_FOUND.status).json({
     status: 'error',
-    code: 'NOT_FOUND',
+    code: ERRORS.NOT_FOUND.code,
     message: `Route ${req.method} ${req.path} not found`,
   });
 });
 
-// Global error handler
-app.use(
-  (err: Error, req: Request, res: Response, next: NextFunction): void => {
-    console.error('Global error handler:', err);
+app.use(errorHandler);
 
-    res.status(500).json({
-      status: 'error',
-      code: 'SERVER_ERROR',
-      message: 'An unexpected error occurred',
-      ...(process.env.NODE_ENV === 'development' && { stack: err.stack }),
-    });
-  }
-);
-
-// Database connection and server startup
 async function startServer(): Promise<void> {
   try {
-    // Connect to MongoDB
     await mongoose.connect(MONGODB_URI);
-    console.log('Connected to MongoDB');
+    info('Connected to MongoDB', { uri: MONGODB_URI.replace(/\/\/.*@/, '//***@') });
 
-    // Start server
-    app.listen(PORT, () => {
-      console.log(`Server is running on port ${PORT}`);
-      console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+    const server = app.listen(PORT, () => {
+      info(`Server is running`, {
+        port: PORT,
+        environment: process.env.NODE_ENV || 'development',
+      });
     });
+
+    const gracefulShutdown = async (signal: string) => {
+      info(`${signal} received, shutting down gracefully...`);
+      
+      server.close(async () => {
+        info('HTTP server closed');
+        
+        try {
+          await mongoose.connection.close();
+          info('MongoDB connection closed');
+          process.exit(0);
+        } catch (error) {
+          logError('Error during shutdown', error as Error);
+          process.exit(1);
+        }
+      });
+
+      setTimeout(() => {
+        logError('Forced shutdown after timeout');
+        process.exit(1);
+      }, 10000);
+    };
+
+    process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+    process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+
   } catch (error) {
-    console.error('Failed to start server:', error);
+    logError('Failed to start server', error as Error);
     process.exit(1);
   }
 }
 
-// Handle graceful shutdown
-process.on('SIGINT', async () => {
-  console.log('\nShutting down gracefully...');
-  await mongoose.connection.close();
-  console.log('MongoDB connection closed');
-  process.exit(0);
-});
-
-process.on('SIGTERM', async () => {
-  console.log('\nShutting down gracefully...');
-  await mongoose.connection.close();
-  console.log('MongoDB connection closed');
-  process.exit(0);
-});
-
-// Start the server
 startServer();
 
 export default app;
