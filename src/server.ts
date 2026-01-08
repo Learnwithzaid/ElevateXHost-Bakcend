@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import passport from 'passport';
 import { initializePassport } from './config/passportConfig';
 import authRoutes from './routes/auth';
+import githubRoutes from './routes/github';
 import { authenticateToken } from './middleware/authMiddleware';
 
 // Load environment variables
@@ -45,6 +46,9 @@ app.get(
 
 // Mount auth routes
 app.use('/auth', authRoutes);
+
+// Mount GitHub routes (all require JWT authentication)
+app.use('/github', authenticateToken, githubRoutes);
 
 // 404 handler
 app.use((req: Request, res: Response) => {

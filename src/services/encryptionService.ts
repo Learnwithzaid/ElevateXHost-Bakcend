@@ -13,6 +13,10 @@ const ENCRYPTED_POSITION = TAG_POSITION + TAG_LENGTH;
  * Format: salt(16) + iv(12) + tag(16) + encryptedData
  */
 export function encryptToken(token: string): string {
+  if (!token) {
+    throw new Error('Token is required for encryption');
+  }
+
   if (!ENCRYPTION_KEY) {
     throw new Error('ENCRYPTION_KEY environment variable is not set');
   }
@@ -40,6 +44,10 @@ export function encryptToken(token: string): string {
  * Format: salt(16) + iv(12) + tag(16) + encryptedData
  */
 export function decryptToken(encrypted: string): string {
+  if (!encrypted) {
+    return '';
+  }
+
   if (!ENCRYPTION_KEY) {
     throw new Error('ENCRYPTION_KEY environment variable is not set');
   }
@@ -62,6 +70,7 @@ export function decryptToken(encrypted: string): string {
 
     return decrypted.toString('utf8');
   } catch (error) {
-    throw new Error('Failed to decrypt token: ' + (error as Error).message);
+    console.error('Decryption error:', error);
+    return '';
   }
 }

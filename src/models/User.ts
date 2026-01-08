@@ -1,5 +1,6 @@
 import mongoose, { Document, Model, Schema } from 'mongoose';
 import bcrypt from 'bcryptjs';
+import { decryptToken, encryptToken } from '../services/encryptionService';
 
 export interface IUser extends Document {
   email: string;
@@ -11,6 +12,8 @@ export interface IUser extends Document {
   createdAt: Date;
   updatedAt: Date;
   comparePassword(candidatePassword: string): Promise<boolean>;
+  getGitHubToken(): Promise<string>;
+  setGitHubToken(token: string): Promise<void>;
 }
 
 const userSchema = new Schema<IUser>(
@@ -76,6 +79,37 @@ userSchema.methods.comparePassword = async function (
     return false;
   }
   return bcrypt.compare(candidatePassword, user.password);
+};
+
+// Get decrypted GitHub access token
+userSchema.methods.getGitHubToken = async function (): Promise<string> {
+  const user = this as IUser;
+  if (!user.githubAccessToken) {
+    return '';
+  }
+  try {
+    return decryptToken(user.githubAccessToken);
+  } catch (error) {
+    console.error('Error decrypting GitHub token:', error);
+    return '';
+  }
+};
+
+// Set encrypted GitHub access token
+userSchema.methods.setGitHubToken = async function (
+  token: string
+): Promise<void> {
+  const user = this as IUser;
+  if (!token) {
+    user.githubAccessToken = undefined;
+    return;
+  }
+  try {
+    user.githubAccessToken = encryptToken(token);
+  } catch (error) {
+    console.error('Error encrypting GitHub token:', error);
+    throw new Error('Failed to encrypt GitHub access token');
+  }
 };
 
 const User: Model<IUser> = mongoose.models.User || mongoose.model<IUser>('User', userSchema);
