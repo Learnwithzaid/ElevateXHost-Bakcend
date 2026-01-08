@@ -16,3 +16,9 @@ export const WEBHOOK_SIGNATURE_INVALID = 'Webhook signature verification failed'
 export const WEBHOOK_PAYLOAD_INVALID = 'Invalid webhook payload format';
 export const WEBHOOK_EVENT_TYPE_INVALID = 'Unsupported webhook event type';
 export const REDEPLOY_TRIGGERED = 'Redeploy triggered successfully';
+export const PROJECT_NOT_FOUND = 'Project not found';
+export const INVALID_GITHUB_REPO = 'Invalid GitHub repository format';
+export const DEPLOYMENT_FAILED = 'Deployment failed';
+export const INSUFFICIENT_PERMISSIONS =
+  'You do not have permission to access this project';
+export const PROJECT_NAME_EXISTS = 'Project name already exists';
