@@ -56,3 +56,42 @@ export interface Release {
   prerelease: boolean;
   publishedAt: Date;
 }
+
+/**
+ * GitHub Push Event interface
+ */
+export interface GitHubPushEvent {
+  ref: string;
+  repository: {
+    id: number;
+    name: string;
+    full_name: string;
+    owner: {
+      name: string;
+      email: string;
+    };
+  };
+  pusher: {
+    name: string;
+    email: string;
+  };
+  commits: Array<{
+    id: string;
+    message: string;
+    timestamp: string;
+    author: {
+      name: string;
+      email: string;
+    };
+  }>;
+}
+
+/**
+ * Error Response interface
+ */
+export interface ErrorResponse {
+  status: 'error';
+  code: string;
+  message: string;
+  details?: any;
+}

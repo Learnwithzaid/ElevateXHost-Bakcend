@@ -1,37 +1,52 @@
-# Authentication System
+# LuxeHost Backend
 
-A complete authentication system built with Express.js, featuring JWT authentication, bcrypt password hashing, and Passport.js GitHub OAuth integration.
+A complete static site hosting backend built with Express.js, featuring JWT authentication, GitHub OAuth, GitHub repository integration, and automated deployments to Cloudflare Pages and Netlify.
 
-## Features
+## 🚀 Features
 
-- ✅ User registration with email and password
-- ✅ User login with JWT token generation
-- ✅ Password hashing using bcrypt (10 rounds)
-- ✅ JWT authentication middleware
+- ✅ User authentication with JWT and bcrypt password hashing
 - ✅ GitHub OAuth integration with Passport.js
-- ✅ Encrypted storage of GitHub access tokens
+- ✅ Encrypted storage of GitHub access tokens (AES-256-GCM)
+- ✅ GitHub API integration (repositories, branches, commits, content)
+- ✅ Project management (CRUD operations)
+- ✅ Automated deployments to Cloudflare Pages and Netlify
+- ✅ Deployment status tracking and redeployment
+- ✅ Rate limiting on all endpoints
+- ✅ Helmet security headers
+- ✅ CORS configuration
+- ✅ Comprehensive error handling and logging
 - ✅ Input validation using Zod
-- ✅ MongoDB integration with Mongoose
-- ✅ Comprehensive error handling
 - ✅ TypeScript for type safety
+- ✅ Health check endpoint
 
-## Tech Stack
+## 🛠 Tech Stack
 
 - **Runtime**: Node.js with TypeScript
 - **Framework**: Express.js
 - **Database**: MongoDB with Mongoose
-- **Authentication**: JWT (jsonwebtoken)
-- **Password Hashing**: bcrypt
-- **OAuth**: Passport.js with GitHub Strategy
+- **Authentication**: JWT (jsonwebtoken), Passport.js
+- **Password Hashing**: bcryptjs
+- **OAuth**: GitHub Strategy
 - **Validation**: Zod
 - **Encryption**: Node.js crypto (AES-256-GCM)
+- **GitHub API**: Octokit
+- **Deployment Providers**: Cloudflare Pages, Netlify
+- **Security**: Helmet, express-rate-limit, CORS
 
-## Installation
+## 📋 Prerequisites
+
+- Node.js 18+ and npm
+- MongoDB 6+ (local or MongoDB Atlas)
+- GitHub OAuth App (for OAuth integration)
+- Cloudflare API Token (for Cloudflare Pages deployments)
+- Netlify API Token (for Netlify deployments)
+
+## 📦 Installation
 
 1. Clone the repository:
 ```bash
 git clone <repository-url>
-cd auth-system
+cd luxehost-backend
 ```
 
 2. Install dependencies:
@@ -44,37 +59,74 @@ npm install
 cp .env.example .env
 ```
 
-4. Configure your environment variables in `.env`:
+4. Configure your environment variables in `.env` (see [Environment Variables](#environment-variables) section)
+
+## 🔧 Configuration
+
+### GitHub OAuth Setup
+
+1. Go to [GitHub Settings > Developer settings > OAuth Apps](https://github.com/settings/developers)
+2. Click "New OAuth App"
+3. Fill in the details:
+   - **Application name**: LuxeHost (or your app name)
+   - **Homepage URL**: `http://localhost:3000` (development)
+   - **Authorization callback URL**: `http://localhost:3000/auth/github/callback`
+4. Click "Register application"
+5. Copy the **Client ID** and generate a **Client Secret**
+6. Add them to your `.env` file:
 ```env
-PORT=3000
-NODE_ENV=development
-
-MONGODB_URI=mongodb://localhost:27017/auth-system
-
-JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
-JWT_EXPIRY=7d
-
-GITHUB_CLIENT_ID=your-github-client-id
-GITHUB_CLIENT_SECRET=your-github-client-secret
+GITHUB_CLIENT_ID=your_client_id_here
+GITHUB_CLIENT_SECRET=your_client_secret_here
 GITHUB_CALLBACK_URL=http://localhost:3000/auth/github/callback
-
-ENCRYPTION_KEY=your-32-byte-encryption-key-change-in-prod
-
-FRONTEND_URL=http://localhost:5173
 ```
 
-5. Set up GitHub OAuth:
-   - Go to GitHub Settings > Developer settings > OAuth Apps
-   - Create a new OAuth App
-   - Set the Authorization callback URL to: `http://localhost:3000/auth/github/callback`
-   - Copy the Client ID and Client Secret to your `.env` file
+### Database Setup
 
-## Usage
+#### Option 1: MongoDB Atlas (Cloud)
+1. Go to [MongoDB Atlas](https://www.mongodb.com/cloud/atlas)
+2. Create a free cluster
+3. Get your connection string
+4. Add it to `.env`:
+```env
+MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/luxehost?retryWrites=true&w=majority
+```
+
+#### Option 2: Local MongoDB
+1. Install MongoDB locally
+2. Start MongoDB service
+3. Use local connection string:
+```env
+MONGODB_URI=mongodb://localhost:27017/luxehost
+```
+
+### Cloudflare Pages Setup
+
+1. Go to [Cloudflare Dashboard](https://dash.cloudflare.com/)
+2. Navigate to "My Profile" > "API Tokens"
+3. Create a token with "Cloudflare Pages" permissions
+4. Add to `.env`:
+```env
+CLOUDFLARE_API_TOKEN=your_api_token_here
+CLOUDFLARE_ACCOUNT_ID=your_account_id_here
+```
+
+### Netlify Setup
+
+1. Go to [Netlify](https://app.netlify.com/)
+2. Navigate to "User settings" > "Applications" > "Personal access tokens"
+3. Create a new access token
+4. Add to `.env`:
+```env
+NETLIFY_API_TOKEN=your_netlify_token_here
+```
+
+## 🏃 Running the Server
 
 ### Development Mode
 ```bash
 npm run dev
 ```
+Server will start on `http://localhost:3000` with hot reload.
 
 ### Production Build
 ```bash
@@ -82,11 +134,26 @@ npm run build
 npm start
 ```
 
-## API Endpoints
+## 📚 API Endpoints
+
+### Health Check
+
+#### `GET /health`
+Check server and database health status.
+
+**Response (200):**
+```json
+{
+  "status": "ok",
+  "timestamp": "2024-01-08T12:00:00.000Z",
+  "version": "1.0.0",
+  "database": "connected"
+}
+```
 
 ### Authentication Routes
 
-#### POST /auth/signup
+#### `POST /auth/signup`
 Register a new user account.
 
 **Request Body:**
@@ -94,11 +161,11 @@ Register a new user account.
 {
   "email": "user@example.com",
   "username": "johndoe",
-  "password": "securepassword123"
+  "password": "SecurePass123!"
 }
 ```
 
-**Success Response (201):**
+**Response (201):**
 ```json
 {
   "status": "success",
@@ -113,42 +180,25 @@ Register a new user account.
 }
 ```
 
-**Error Response (400) - Validation Error:**
-```json
-{
-  "status": "error",
-  "code": "VALIDATION_ERROR",
-  "message": "Invalid input data",
-  "details": {
-    "email": ["Invalid email format"],
-    "password": ["Password must be at least 8 characters"]
-  }
-}
+**cURL Example:**
+```bash
+curl -X POST http://localhost:3000/auth/signup \
+  -H "Content-Type: application/json" \
+  -d '{"email":"user@example.com","username":"johndoe","password":"SecurePass123!"}'
 ```
 
-**Error Response (409) - User Exists:**
-```json
-{
-  "status": "error",
-  "code": "USER_EXISTS",
-  "message": "User with this email already exists"
-}
-```
-
----
-
-#### POST /auth/login
+#### `POST /auth/login`
 Authenticate with email and password.
 
 **Request Body:**
 ```json
 {
   "email": "user@example.com",
-  "password": "securepassword123"
+  "password": "SecurePass123!"
 }
 ```
 
-**Success Response (200):**
+**Response (200):**
 ```json
 {
   "status": "success",
@@ -163,92 +213,229 @@ Authenticate with email and password.
 }
 ```
 
-**Error Response (401) - Invalid Credentials:**
+**cURL Example:**
+```bash
+curl -X POST http://localhost:3000/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"user@example.com","password":"SecurePass123!"}'
+```
+
+#### `GET /auth/github`
+Initiate GitHub OAuth flow. Redirects to GitHub for authorization.
+
+**Scopes Requested:** `user:email`, `public_repo`, `repo`
+
+#### `GET /auth/github/callback`
+GitHub OAuth callback handler.
+
+**Success:** Redirects to `FRONTEND_URL?token=<jwt_token>`  
+**Error:** Redirects to `FRONTEND_URL?error=github_auth_failed`
+
+#### `POST /auth/github`
+Link GitHub account to existing user.
+
+**Headers:** `Authorization: Bearer <token>`
+
+**Request Body:**
 ```json
 {
-  "status": "error",
-  "code": "INVALID_CREDENTIALS",
-  "message": "Invalid email or password"
+  "githubAccessToken": "gho_xxxxxxxxxxxx"
 }
 ```
 
----
+### GitHub Routes
 
-#### GET /auth/github
-Initiate GitHub OAuth flow. Redirects to GitHub for authorization.
+All GitHub routes require JWT authentication via `Authorization: Bearer <token>` header.
 
-**Scopes Requested:**
-- `user:email` - Access to user's email addresses
-- `public_repo` - Access to public repositories
+#### `GET /github/repos`
+List user's GitHub repositories.
 
----
-
-#### GET /auth/github/callback
-GitHub OAuth callback handler. GitHub redirects here after user authorization.
-
-**Success Response:**
-Redirects to `FRONTEND_URL` with JWT token as query parameter:
-```
-http://localhost:5173?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-```
-
-**Error Response:**
-Redirects to `FRONTEND_URL` with error parameter:
-```
-http://localhost:5173?error=github_auth_failed
-```
-
-### Protected Routes
-
-#### GET /api/protected
-Example protected route requiring JWT authentication.
-
-**Headers:**
-```
-Authorization: Bearer <your-jwt-token>
-```
-
-**Success Response (200):**
+**Response (200):**
 ```json
 {
   "status": "success",
-  "message": "You have access to this protected route",
-  "user": {
-    "id": "507f1f77bcf86cd799439011",
-    "email": "user@example.com",
-    "username": "johndoe"
+  "data": [
+    {
+      "id": 123456789,
+      "name": "my-website",
+      "description": "My personal website",
+      "url": "https://github.com/username/my-website",
+      "owner": "username",
+      "private": false,
+      "language": "JavaScript",
+      "defaultBranch": "main",
+      "stars": 42
+    }
+  ]
+}
+```
+
+**cURL Example:**
+```bash
+curl -X GET http://localhost:3000/github/repos \
+  -H "Authorization: Bearer <your_jwt_token>"
+```
+
+#### `GET /github/repos/:owner/:repo/branches`
+List repository branches.
+
+**Response (200):**
+```json
+{
+  "status": "success",
+  "data": [
+    {
+      "name": "main",
+      "commit": {
+        "sha": "abc123...",
+        "url": "https://api.github.com/..."
+      }
+    }
+  ]
+}
+```
+
+#### `GET /github/repos/:owner/:repo/commits`
+List repository commits.
+
+**Query Parameters:**
+- `branch` (optional): Branch name (default: default branch)
+- `limit` (optional): Number of commits (default: 10, max: 100)
+
+#### `GET /github/repos/:owner/:repo/contents/:path`
+Get file or directory contents.
+
+### Projects Routes
+
+All project routes require JWT authentication.
+
+#### `GET /projects`
+List user's projects.
+
+**Response (200):**
+```json
+{
+  "status": "success",
+  "data": [
+    {
+      "id": "507f1f77bcf86cd799439011",
+      "userId": "507f191e810c19729de860ea",
+      "name": "my-portfolio",
+      "description": "My portfolio website",
+      "githubRepo": "username/my-portfolio",
+      "deploymentProvider": "cloudflare",
+      "deploymentId": "abc-123-xyz",
+      "deploymentUrl": "https://my-portfolio.pages.dev",
+      "status": "deployed",
+      "lastDeploymentTime": "2024-01-08T12:00:00.000Z",
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "updatedAt": "2024-01-08T12:00:00.000Z"
+    }
+  ]
+}
+```
+
+**cURL Example:**
+```bash
+curl -X GET http://localhost:3000/projects \
+  -H "Authorization: Bearer <your_jwt_token>"
+```
+
+#### `POST /projects`
+Create a new project.
+
+**Request Body:**
+```json
+{
+  "name": "my-blog",
+  "description": "My personal blog",
+  "githubRepo": "username/my-blog",
+  "branch": "main",
+  "deploymentProvider": "netlify"
+}
+```
+
+**cURL Example:**
+```bash
+curl -X POST http://localhost:3000/projects \
+  -H "Authorization: Bearer <your_jwt_token>" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"my-blog","description":"My personal blog","githubRepo":"username/my-blog","branch":"main","deploymentProvider":"netlify"}'
+```
+
+#### `GET /projects/:id`
+Get project by ID.
+
+#### `PATCH /projects/:id`
+Update project.
+
+**Request Body:**
+```json
+{
+  "name": "my-updated-blog",
+  "description": "Updated description"
+}
+```
+
+#### `DELETE /projects/:id`
+Delete project.
+
+#### `GET /projects/:id/deployment-status`
+Get current deployment status.
+
+**Response (200):**
+```json
+{
+  "status": "success",
+  "data": {
+    "status": "deployed",
+    "url": "https://my-site.pages.dev",
+    "lastDeployed": "2024-01-08T12:00:00.000Z",
+    "deploymentUrl": "https://my-site.pages.dev"
   }
 }
 ```
 
-**Error Response (401) - Missing Token:**
-```json
-{
-  "status": "error",
-  "code": "MISSING_TOKEN",
-  "message": "Access token is required"
-}
-```
+#### `POST /projects/:id/redeploy`
+Trigger a redeployment.
 
-**Error Response (401) - Invalid Token:**
-```json
-{
-  "status": "error",
-  "code": "INVALID_TOKEN",
-  "message": "Invalid access token"
-}
-```
+## 🔒 Security
 
-**Error Response (401) - Expired Token:**
-```json
-{
-  "status": "error",
-  "code": "TOKEN_EXPIRED",
-  "message": "Access token has expired"
-}
-```
+### Rate Limiting
 
-## Error Response Format
+Different rate limits are applied to different route groups:
+
+- **General routes**: 100 requests per 15 minutes per IP
+- **Auth routes**: 5 requests per 15 minutes per IP
+- **GitHub routes**: 30 requests per minute per IP
+- **Webhook routes**: 50 requests per minute per IP
+
+When rate limit is exceeded, a `429 Too Many Requests` response is returned with a `Retry-After` header.
+
+### Security Headers (Helmet)
+
+The following security headers are automatically applied:
+- Content Security Policy (CSP)
+- X-Frame-Options (DENY)
+- X-Content-Type-Options (nosniff)
+- X-XSS-Protection
+
+### CORS Configuration
+
+Cross-Origin Resource Sharing is configured to:
+- Allow requests from `FRONTEND_URL` (configurable)
+- Allow credentials (cookies/auth headers)
+- Support methods: GET, POST, PATCH, DELETE, OPTIONS
+- Expose `X-Total-Count` header for pagination
+
+### Authentication
+
+- Passwords hashed with bcryptjs (10 salt rounds)
+- JWT tokens with configurable expiration
+- GitHub access tokens encrypted with AES-256-GCM before storage
+- No sensitive data in API responses
+
+## ⚠️ Error Handling
 
 All error responses follow this format:
 
@@ -266,72 +453,176 @@ All error responses follow this format:
 | Code | HTTP Status | Description |
 |------|-------------|-------------|
 | `VALIDATION_ERROR` | 400 | Input validation failed |
+| `INVALID_CONTENT_TYPE` | 400 | Content-Type must be application/json |
+| `INVALID_CREDENTIALS` | 401 | Invalid email or password |
 | `MISSING_TOKEN` | 401 | JWT token not provided |
 | `INVALID_TOKEN` | 401 | JWT token is invalid |
 | `TOKEN_EXPIRED` | 401 | JWT token has expired |
-| `INVALID_CREDENTIALS` | 401 | Email or password is incorrect |
-| `USER_EXISTS` | 409 | User with this email already exists |
-| `USERNAME_EXISTS` | 409 | Username is already taken |
-| `DUPLICATE_ENTRY` | 409 | Duplicate database entry |
-| `SERVER_ERROR` | 500 | Internal server error |
+| `UNAUTHORIZED` | 401 | Unauthorized access |
+| `GITHUB_NOT_CONNECTED` | 401 | GitHub account not connected |
+| `INSUFFICIENT_PERMISSIONS` | 403 | Insufficient permissions for resource |
+| `NOT_FOUND` | 404 | Resource not found |
+| `PROJECT_NOT_FOUND` | 404 | Project not found |
+| `USER_EXISTS` | 409 | User with email already exists |
+| `PROJECT_NAME_EXISTS` | 409 | Project name already exists |
+| `TOO_MANY_REQUESTS` | 429 | Rate limit exceeded |
+| `INTERNAL_ERROR` | 500 | Internal server error |
+| `DEPLOYMENT_FAILED` | 502 | Deployment provider API failed |
 
-## Security Features
-
-- ✅ Passwords are hashed using bcrypt with 10 salt rounds
-- ✅ JWT tokens expire based on `JWT_EXPIRY` configuration
-- ✅ GitHub access tokens are encrypted using AES-256-GCM before storage
-- ✅ Passwords are never returned in API responses (selected: false in schema)
-- ✅ JWT secret and encryption key loaded from environment variables
-- ✅ Input validation on all endpoints using Zod
-
-## User Model Schema
-
-```typescript
-{
-  _id: ObjectId,
-  email: string (unique, required),
-  username: string (unique, required, min 3 chars),
-  password: string (hashed, not selected by default),
-  githubId: string (optional, sparse unique),
-  githubAccessToken: string (encrypted, not selected by default),
-  githubUsername: string (optional),
-  createdAt: Date,
-  updatedAt: Date
-}
-```
-
-## Middleware
-
-### authenticateToken
-JWT authentication middleware that:
-- Extracts token from `Authorization: Bearer <token>` header
-- Verifies token using `JWT_SECRET`
-- Attaches decoded user object to `req.user`
-- Returns 401 if token is missing, invalid, or expired
-
-## Environment Variables
+## 🌍 Environment Variables
 
 | Variable | Description | Default | Required |
 |----------|-------------|---------|----------|
 | `PORT` | Server port | 3000 | No |
-| `NODE_ENV` | Environment | development | No |
+| `NODE_ENV` | Environment (development/production) | development | No |
 | `MONGODB_URI` | MongoDB connection string | - | Yes |
 | `JWT_SECRET` | Secret for JWT signing | - | Yes |
-| `JWT_EXPIRY` | JWT token expiration time | 7d | No |
+| `JWT_EXPIRY` | JWT token expiration | 7d | No |
 | `GITHUB_CLIENT_ID` | GitHub OAuth Client ID | - | Yes |
 | `GITHUB_CLIENT_SECRET` | GitHub OAuth Client Secret | - | Yes |
 | `GITHUB_CALLBACK_URL` | GitHub OAuth callback URL | - | Yes |
-| `ENCRYPTION_KEY` | Key for token encryption (32 bytes) | - | Yes |
-| `FRONTEND_URL` | Frontend URL for OAuth redirects | http://localhost:5173 | Yes |
+| `ENCRYPTION_KEY` | 32-byte key for AES-256-GCM | - | Yes |
+| `FRONTEND_URL` | Frontend URL(s), comma-separated | http://localhost:5173 | Yes |
+| `CLOUDFLARE_API_TOKEN` | Cloudflare API token | - | Yes* |
+| `CLOUDFLARE_ACCOUNT_ID` | Cloudflare account ID | - | Yes* |
+| `NETLIFY_API_TOKEN` | Netlify API token | - | Yes* |
+| `RATE_LIMIT_WINDOW_MS` | Rate limit window (ms) | 900000 | No |
+| `RATE_LIMIT_MAX_REQUESTS` | Max requests per window | 100 | No |
+| `AUTH_RATE_LIMIT_MAX` | Auth requests per window | 5 | No |
+| `WEBHOOK_RATE_LIMIT_MAX` | Webhook requests per minute | 50 | No |
+| `GITHUB_RATE_LIMIT_MAX` | GitHub requests per minute | 30 | No |
+| `LOG_LEVEL` | Logging level (debug/info/warn/error) | info | No |
 
-## Development
+\* Required if using that deployment provider
 
-The project includes:
-- TypeScript configuration for type safety
-- Hot reload in development using `ts-node-dev`
-- ESLint-ready structure
-- Proper error handling and logging
+## 🧪 Testing
 
-## License
+### Test Authentication
 
-MIT
+```bash
+# Sign up
+curl -X POST http://localhost:3000/auth/signup \
+  -H "Content-Type: application/json" \
+  -d '{"email":"test@example.com","username":"testuser","password":"Test1234!"}'
+
+# Login
+curl -X POST http://localhost:3000/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"test@example.com","password":"Test1234!"}'
+
+# Protected route
+curl -X GET http://localhost:3000/api/protected \
+  -H "Authorization: Bearer <your_token>"
+```
+
+### Test GitHub Integration
+
+```bash
+# List repositories
+curl -X GET http://localhost:3000/github/repos \
+  -H "Authorization: Bearer <your_token>"
+
+# List branches
+curl -X GET http://localhost:3000/github/repos/owner/repo/branches \
+  -H "Authorization: Bearer <your_token>"
+```
+
+### Test Projects
+
+```bash
+# Create project
+curl -X POST http://localhost:3000/projects \
+  -H "Authorization: Bearer <your_token>" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"test-site","githubRepo":"user/repo","deploymentProvider":"cloudflare"}'
+
+# List projects
+curl -X GET http://localhost:3000/projects \
+  -H "Authorization: Bearer <your_token>"
+```
+
+## 🚀 Deployment
+
+See [DEPLOYMENT.md](./DEPLOYMENT.md) for detailed deployment instructions including:
+- Production environment setup
+- MongoDB Atlas configuration
+- Docker deployment
+- Heroku/Railway/Render deployment
+- CI/CD with GitHub Actions
+- Health check configuration
+- Monitoring and logging
+
+## 🔧 Development
+
+### Project Structure
+
+```
+src/
+├── config/           # Configuration files (Passport, etc.)
+├── constants/        # Error codes and constants
+├── middleware/       # Express middleware
+│   ├── authMiddleware.ts
+│   ├── corsMiddleware.ts
+│   ├── errorHandler.ts
+│   ├── rateLimiter.ts
+│   ├── requestLogger.ts
+│   └── validateContentType.ts
+├── models/           # Mongoose models
+│   ├── User.ts
+│   └── Project.ts
+├── routes/           # API routes
+│   ├── auth.ts
+│   ├── github.ts
+│   ├── projects.ts
+│   └── health.ts
+├── schemas/          # Zod validation schemas
+├── services/         # External service integrations
+│   ├── cloudflareService.ts
+│   ├── encryptionService.ts
+│   ├── githubService.ts
+│   └── netlifyService.ts
+├── types/            # TypeScript type definitions
+├── utils/            # Utility functions (logger, etc.)
+└── server.ts         # Main server file
+```
+
+### Middleware Order
+
+Middleware is applied in this specific order:
+1. Helmet (security headers)
+2. CORS (cross-origin requests)
+3. Body parsers (JSON, URL-encoded)
+4. Passport initialization
+5. Request logger
+6. Content-Type validation
+7. Rate limiters (per route group)
+8. JWT authentication (protected routes only)
+9. Routes
+10. 404 handler
+11. Error handler (must be last)
+
+## 📝 License
+
+MIT License - see LICENSE file for details
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+### Development Guidelines
+
+- Use TypeScript for all new files
+- Follow existing code style and patterns
+- Add proper error handling
+- Validate all inputs with Zod
+- Never log sensitive data (passwords, tokens, secrets)
+- Write descriptive commit messages
+- Update documentation for API changes
+
+## 📧 Support
+
+For issues and questions, please open an issue on GitHub.
