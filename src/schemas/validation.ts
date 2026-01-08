@@ -21,6 +21,14 @@ export const githubAuthSchema = z.object({
   code: z.string().min(1, 'GitHub authorization code is required'),
 });
 
+export const webhookConfigSchema = z.object({
+  defaultBranch: z.string().min(1, 'Default branch is required').max(50, 'Branch name too long'),
+});
+
+export type SignupInput = z.infer<typeof signupSchema>;
+export type LoginInput = z.infer<typeof loginSchema>;
+export type GithubAuthInput = z.infer<typeof githubAuthSchema>;
+export type WebhookConfigInput = z.infer<typeof webhookConfigSchema>;
 const githubRepoRegex = /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/;
 
 export const createProjectSchema = z.object({

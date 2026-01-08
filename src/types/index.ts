@@ -56,3 +56,23 @@ export interface Release {
   prerelease: boolean;
   publishedAt: Date;
 }
+
+export interface GitHubPushEvent {
+  ref: string; // 'refs/heads/main'
+  repository: {
+    name: string;
+    full_name: string; // 'owner/repo'
+  };
+  pusher: {
+    name: string;
+  };
+  commits: Array<{
+    id: string;
+    message: string;
+  }>;
+}
+
+export interface WebhookSignature {
+  header: string; // 'X-Hub-Signature-256'
+  signature: string; // 'sha256=...'
+}

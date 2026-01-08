@@ -5,6 +5,8 @@ import passport from 'passport';
 import { initializePassport } from './config/passportConfig';
 import authRoutes from './routes/auth';
 import githubRoutes from './routes/github';
+import webhookRoutes from './routes/webhooks';
+import projectRoutes from './routes/projects';
 import projectsRoutes from './routes/projects';
 import { authenticateToken } from './middleware/authMiddleware';
 
@@ -51,6 +53,11 @@ app.use('/auth', authRoutes);
 // Mount GitHub routes (all require JWT authentication)
 app.use('/github', authenticateToken, githubRoutes);
 
+// Mount project routes (all require JWT authentication)
+app.use('/projects', authenticateToken, projectRoutes);
+
+// Mount webhook routes (PUBLIC - signature verified in route)
+app.use('/webhook', webhookRoutes);
 // Mount Projects routes (all require JWT authentication)
 app.use('/projects', authenticateToken, projectsRoutes);
 
